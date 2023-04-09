@@ -44,29 +44,36 @@ def get_batch(data, batch_size, block_size):
     y = torch.stack([data[idx + 1: idx + 1 + block_size] for idx in starts])
     return (x, y)
 
-def plot_samples(model, device, count=100):
+def plot_samples(model, device, count=100, idx=0, save=False):
     x, y = get_batch(data, 1, count)
     x, y = x.to(device), y.to(device)
     yh, loss = model(x, y)
     yh = yh.detach().cpu()
     y = y.detach().cpu()
-    plt.plot(y[0])
-    plt.plot(yh[0])
-    plt.show()
+    fig = plt.figure()
+    plt.plot(y[0], label='target')
+    plt.plot(yh[0], label='prediction')
+    plt.title(f'iter {idx}')
+    plt.legend(loc='upper left')
+    if save:
+        fig.savefig(f'iter_{idx}.png')
+    else:
+        plt.show()
 
 
 if __name__ == '__main__':
     input_dim = 1
     hidden_dim = 1
     iters = 4000
-    batch_size = 4
+    batch_size = 32
     block_size = 128
+    data_len = 1000
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = Model(input_dim, hidden_dim)
     model.to(device)
     optim = torch.optim.AdamW(model.parameters(), lr=1e-3)
-    data = gen_data()
-    plot_samples(model, device, 500)
+    data = gen_data(data_len)
+    plot_samples(model, device, 500, idx=-1)
     for i in range(iters):
         x, y = get_batch(data, batch_size, block_size)
         x, y = x.to(device), y.to(device)
@@ -74,7 +81,7 @@ if __name__ == '__main__':
         yh, loss = model(x, y)
         loss.backward()
         optim.step()
-        if i % 100 == 0:
+        if i % 50 == 0:
             print(loss)
-    plot_samples(model, device, 500)
+    plot_samples(model, device, 500, i)
 
